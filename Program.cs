@@ -1,18 +1,26 @@
+using AccountService.Behaviors;
 using AccountService.Controllers;
+using AccountService.Features.Accounts.Commands;
+using AccountService.Filters;
 using AccountService.Interfaces;
-using AccountService.Models.Configs;
 using AccountService.Models.Dto;
-using AccountService.Models.Enums;
 using AccountService.Repositories;
+using AccountService.Services;
 using AccountService.Validators;
 using FluentValidation;
-using Microsoft.AspNetCore.Mvc;
+using MediatR;
 using Microsoft.OpenApi.Models;
-//using Microsoft.Extensions.DependencyInjection;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+// Добавление сервисов
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<ValidationFilter>();
+    options.Filters.Add<ApiExceptionFilter>();
+});
+
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(c =>
@@ -26,21 +34,33 @@ builder.Services.AddSwaggerGen(c =>
     c.EnableAnnotations();
 });
 
-//регистрация сервисов
-builder.Services.AddValidatorsFromAssemblyContaining<AccountValidator>(ServiceLifetime.Scoped);
-builder.Services.AddScoped<IValidator<CreateAccountRequest>, CreateAccountRequestValidator>();
+//регистрация репозиторие и сервисов
 builder.Services.AddSingleton<IAccountRepository, AccountRepository>();
-builder.Services.AddMediatR(cfg =>  cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+builder.Services.AddSingleton<IClientVerificationService, ClientVerificationServiceStub>();
+builder.Services.AddSingleton<ICurrencyService, CurrencyServiceStub>();
+
 // Регистрация валидаторов
-builder.Services.AddScoped<IValidator<UpdateAccountRequest>, UpdateAccountRequestValidator>();
-builder.Services.AddScoped<IValidator<CreateTransactionRequest>, CreateTransactionRequestValidator>();
-builder.Services.AddScoped<IValidator<TransferRequest>, TransferRequestValidator>();
+builder.Services.AddScoped<IValidator<CreateAccountCommand>, CreateAccountCommandValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<AccountValidator>(ServiceLifetime.Scoped);
 
-// Регистрация контроллеров (если не используется AddControllers())
-builder.Services.AddControllers()
-    .AddApplicationPart(typeof(AccountsController).Assembly);
+//builder.Services.AddScoped<IValidator<CreateAccountRequest>, CreateAccountRequestValidator>();
+//builder.Services.AddScoped<IValidator<UpdateAccountRequest>, UpdateAccountRequestValidator>();
+//builder.Services.AddScoped<IValidator<CreateTransactionRequest>, CreateTransactionRequestValidator>();
+//builder.Services.AddScoped<IValidator<TransferRequest>, TransferRequestValidator>();
 
-builder.Services.AddTransient(typeOf(IPipelineBehavior<,>), typeOf(ValidationBehavior<,>));
+// Настройка MediatR
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
+    cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
+    cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
+});
+
+// Регистрация фильтров
+builder.Services.AddScoped<ValidationFilter>();
+builder.Services.AddScoped<ApiExceptionFilter>();
+
+//builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
 var app = builder.Build();
 

@@ -5,6 +5,9 @@ using AccountService.Models.Enums;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
+using AccountService.Features.Accounts.Commands;
+using AccountService.Features.Accounts.Queries;
+using MediatR;
 
 namespace AccountService.Controllers
 {
@@ -12,42 +15,33 @@ namespace AccountService.Controllers
     [Route("api/[controller]")]
     public class AccountsController : ControllerBase
     {
-            private readonly IAccountRepository _repository;
-            private readonly IValidator<CreateAccountRequest> _validator;
+            private readonly IMediator _mediator;
 
-            public AccountsController(
-                IAccountRepository repository,
-                IValidator<CreateAccountRequest> validator)
+            public AccountsController(IMediator mediator)
             {
-                _repository = repository;
-                _validator = validator;
+                _mediator = mediator;
             }
 
             [HttpGet]
-            public IActionResult GetAll(
-                [FromQuery] string? currency,
-                [FromQuery] AccountType? type,
-                [FromQuery] int page = 1,
-                [FromQuery] int pageSize = 10)
+            [ProducesResponseType(typeof(IEnumerable<Account>), StatusCodes.Status200OK)]
+            public async Task<IActionResult> GetAll(
+                    [FromQuery] string? currency,
+                    [FromQuery] AccountType? type,
+                    [FromQuery] int page = 1,
+                    [FromQuery] int pageSize = 10)
             {
-                var query  = _repository.GetAll().AsQueryable();
-
-                //фильтрация(если параметры указаны)
-                if (currency != null)
-                    query = query.Where(a => a.Currency == currency);
-                if (type != null)
-                query = query.Where(a => a.Type == type);
-
-                var result = query.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-                return Ok(new { data = result, page, pageSize});
+                var query = new GetAllAccountsQuery(currency, type, page, pageSize);
+                var result = await _mediator.Send(query);
+                return Ok(result);
             }
 
             [HttpGet("{id}")]
             [ProducesResponseType(typeof(Account), StatusCodes.Status200OK)]
             [ProducesResponseType(StatusCodes.Status404NotFound)]
-            public IActionResult GetById(Guid id)
+            public async Task<IActionResult> GetById(Guid id)
             {
-                var account = _repository.GetById(id);
+                var query = new GetAccountByIdQuery(id);
+                var account = await _mediator.Send(query);
                 return account != null ? Ok(account) : NotFound();
             }
 
@@ -56,63 +50,38 @@ namespace AccountService.Controllers
             [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
             public async Task<IActionResult> Create([FromBody] CreateAccountRequest request)
             {
-                    try
-                    {
-                        var validationResult = await _validator.ValidateAsync(request);
-                        if (!validationResult.IsValid)
-                        {
-                            return ValidationProblem(new ValidationProblemDetails(validationResult.ToDictionary()));
-                        }
-
-                        // Логика создания счёта
-                        var account = new Account
-                        {
-                            Id = Guid.NewGuid(),
-                            OwnerId = request.OwnerId,
-                            Type = request.Type,
-                            Currency = request.Currency,
-                            InterestRate = request.InterestRate,
-                            OpenDate = DateTime.UtcNow,
-                            Balance = 0
-
-                        };
-                        _repository.Add(account);
-
-                        return Created($"/accounts/{account.Id}", account);
-                    }
-                    catch (Exception ex)
-                    {
-                        return StatusCode(500, new { error = ex.Message });
-                    }
+                    // Логика создания счёта
+                    var command = new CreateAccountCommand(
+                        request.OwnerId,
+                        request.Type,
+                        request.Currency,
+                        request.InterestRate
+                    );
+                    var account = await _mediator.Send(command);
+                    return Created($"/accounts/{account.Id}", account);
+                    
             }
 
             [HttpPut("{id}")]
             [ProducesResponseType(typeof(Account), StatusCodes.Status200OK)]
-            [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+           // [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
             [ProducesResponseType(StatusCodes.Status404NotFound)]
-            public IActionResult Update(Guid id,
+            public async Task<IActionResult> Update(Guid id,
                 [FromBody] UpdateAccountRequest request)
             {
-                var account = _repository.GetById(id);
-                if (account == null) return NotFound();
-
-                account.InterestRate = request.InterestRate;
-                account.CloseDate = request.CloseDate;
-
-                _repository.Update(account);
-                return Ok(account);
+                var command = new UpdateAccountCommand(id, request.InterestRate, request.CloseDate);
+                var account = await _mediator.Send(command);
+                return account != null ? Ok(account) : NotFound();
             }
 
             [HttpDelete("{id}")]
             [ProducesResponseType(StatusCodes.Status204NoContent)]
             [ProducesResponseType(StatusCodes.Status404NotFound)]
-            public IActionResult Delete(Guid id)
+            public async Task<IActionResult> Delete(Guid id)
             {
-            var account = _repository.GetById(id);
-            if (account == null) return NotFound();
-
-            _repository.Delete(id);
-            return NoContent();
+            var command = new DeleteAccountCommand(id);
+            var result = await _mediator.Send(command);
+            return result ? NoContent() : NotFound();
             }
     }
 }

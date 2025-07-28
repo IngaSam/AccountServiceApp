@@ -1,6 +1,10 @@
-﻿namespace AccountService.Features.Accounts.Commands
+﻿using AccountService.Models;
+using MediatR;
+
+namespace AccountService.Features.Accounts.Commands
 {
-    public class UpdateAccountCommand
-    {
-    }
+    public record UpdateAccountCommand(
+        Guid Id,
+        decimal? InterestRate,
+        DateTime? CloseDate) : IRequest<Account?>;
 }

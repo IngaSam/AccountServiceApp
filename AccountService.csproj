@@ -26,7 +26,6 @@
     <Folder Include="Infrastructure\Identity\" />
     <Folder Include="App\" />
     <Folder Include="Infrastructure\Новая папка\" />
-    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>

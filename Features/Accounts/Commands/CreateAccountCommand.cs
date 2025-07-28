@@ -4,7 +4,7 @@ using MediatR;
 
 namespace AccountService.Features.Accounts.Commands
 {
-    public class CreateAccountCommand
+    public record CreateAccountCommand
     (
         Guid OwnerId, 
         AccountType Type,

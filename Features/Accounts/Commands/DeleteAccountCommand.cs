@@ -1,6 +1,7 @@
-﻿namespace AccountService.Features.Accounts.Commands
+﻿using MediatR;
+
+namespace AccountService.Features.Accounts.Commands
 {
-    public class DeleteAccountCommand
-    {
-    }
+    public record DeleteAccountCommand(Guid Id) : IRequest<bool>;
+    
 }
