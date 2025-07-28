@@ -20,9 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Features\Accounts\" />
     <Folder Include="Features\Wallets\" />
-    <Folder Include="Features\Transactions\" />
     <Folder Include="Infrastructure\MongoDb\" />
     <Folder Include="Infrastructure\ObjectStorage\" />
     <Folder Include="Infrastructure\Identity\" />

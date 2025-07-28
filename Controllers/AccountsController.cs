@@ -42,40 +42,77 @@ namespace AccountService.Controllers
                 return Ok(new { data = result, page, pageSize});
             }
 
+            [HttpGet("{id}")]
+            [ProducesResponseType(typeof(Account), StatusCodes.Status200OK)]
+            [ProducesResponseType(StatusCodes.Status404NotFound)]
+            public IActionResult GetById(Guid id)
+            {
+                var account = _repository.GetById(id);
+                return account != null ? Ok(account) : NotFound();
+            }
+
             [HttpPost]
             [ProducesResponseType(typeof(Account), StatusCodes.Status201Created)]
             [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Create([FromBody] CreateAccountRequest request)
+            public async Task<IActionResult> Create([FromBody] CreateAccountRequest request)
             {
-                try
-                {
-                    var validationResult = await _validator.ValidateAsync(request);
-                    if (!validationResult.IsValid)
+                    try
                     {
-                        return ValidationProblem(new ValidationProblemDetails(validationResult.ToDictionary()));
+                        var validationResult = await _validator.ValidateAsync(request);
+                        if (!validationResult.IsValid)
+                        {
+                            return ValidationProblem(new ValidationProblemDetails(validationResult.ToDictionary()));
+                        }
+
+                        // Логика создания счёта
+                        var account = new Account
+                        {
+                            Id = Guid.NewGuid(),
+                            OwnerId = request.OwnerId,
+                            Type = request.Type,
+                            Currency = request.Currency,
+                            InterestRate = request.InterestRate,
+                            OpenDate = DateTime.UtcNow,
+                            Balance = 0
+
+                        };
+                        _repository.Add(account);
+
+                        return Created($"/accounts/{account.Id}", account);
                     }
-
-                    // Логика создания счёта
-                    var account = new Account
+                    catch (Exception ex)
                     {
-                        Id = Guid.NewGuid(),
-                        OwnerId = request.OwnerId,
-                        Type = request.Type,
-                        Currency = request.Currency,
-                        InterestRate = request.InterestRate,
-                        OpenDate = DateTime.UtcNow,
-                        Balance = 0
-
-                    };
-                    _repository.Add(account);
-
-                    return Created($"/accounts/{account.Id}", account);
-                }
-                catch (Exception ex)
-                {
-                    return StatusCode(500, new { error = ex.Message });
-                }
+                        return StatusCode(500, new { error = ex.Message });
+                    }
             }
 
+            [HttpPut("{id}")]
+            [ProducesResponseType(typeof(Account), StatusCodes.Status200OK)]
+            [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+            [ProducesResponseType(StatusCodes.Status404NotFound)]
+            public IActionResult Update(Guid id,
+                [FromBody] UpdateAccountRequest request)
+            {
+                var account = _repository.GetById(id);
+                if (account == null) return NotFound();
+
+                account.InterestRate = request.InterestRate;
+                account.CloseDate = request.CloseDate;
+
+                _repository.Update(account);
+                return Ok(account);
+            }
+
+            [HttpDelete("{id}")]
+            [ProducesResponseType(StatusCodes.Status204NoContent)]
+            [ProducesResponseType(StatusCodes.Status404NotFound)]
+            public IActionResult Delete(Guid id)
+            {
+            var account = _repository.GetById(id);
+            if (account == null) return NotFound();
+
+            _repository.Delete(id);
+            return NoContent();
+            }
     }
 }

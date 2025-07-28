@@ -1,3 +1,4 @@
+using AccountService.Controllers;
 using AccountService.Interfaces;
 using AccountService.Models.Configs;
 using AccountService.Models.Dto;
@@ -30,7 +31,16 @@ builder.Services.AddValidatorsFromAssemblyContaining<AccountValidator>(ServiceLi
 builder.Services.AddScoped<IValidator<CreateAccountRequest>, CreateAccountRequestValidator>();
 builder.Services.AddSingleton<IAccountRepository, AccountRepository>();
 builder.Services.AddMediatR(cfg =>  cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
-//builder.Services.AddTransient(typeOf(IPiperlineBehavior<,>), typeOf(ValidationBehavior<,>));
+// Регистрация валидаторов
+builder.Services.AddScoped<IValidator<UpdateAccountRequest>, UpdateAccountRequestValidator>();
+builder.Services.AddScoped<IValidator<CreateTransactionRequest>, CreateTransactionRequestValidator>();
+builder.Services.AddScoped<IValidator<TransferRequest>, TransferRequestValidator>();
+
+// Регистрация контроллеров (если не используется AddControllers())
+builder.Services.AddControllers()
+    .AddApplicationPart(typeof(AccountsController).Assembly);
+
+builder.Services.AddTransient(typeOf(IPipelineBehavior<,>), typeOf(ValidationBehavior<,>));
 
 var app = builder.Build();
 
