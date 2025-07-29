@@ -7,7 +7,9 @@ namespace AccountService.Services
     {
         public bool IsCurrencySupported(string currencyCode)
         {
-            // Проверяем по списку поддерживаемых валют
+            if (string.IsNullOrWhiteSpace(currencyCode))
+             return false;
+
             return CurrencyConfig.SupportedCurrencies.Contains(currencyCode);
         }
     }

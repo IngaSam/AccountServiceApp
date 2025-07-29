@@ -23,10 +23,9 @@ namespace AccountService.Repositories
 
         public Account? GetById(Guid id)
         {
-            lock (_lock)
-            {
+            
                 return _accounts.FirstOrDefault(a => a.Id == id);
-            }
+            
         }
 
         public void Add(Account account)

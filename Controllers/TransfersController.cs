@@ -1,6 +1,6 @@
-﻿using AccountService.Interfaces;
+﻿using AccountService.Features.Transfers.Commands;
 using AccountService.Models.Dto;
-using FluentValidation;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AccountService.Controllers
@@ -9,53 +9,37 @@ namespace AccountService.Controllers
     [Route("api/[controller]")]
     public class TransfersController: ControllerBase
     {
-        private readonly IAccountRepository _accountRepository;
-        private readonly IValidator<TransferRequest> _validator;
+        private readonly IMediator _mediator;
 
-        public TransfersController(
-            IAccountRepository accountRepository,
-            IValidator<TransferRequest> validator)
+        public TransfersController(IMediator mediator)
         {
-            _accountRepository = accountRepository;
-            _validator = validator;
+            _mediator = mediator;
         }
 
         [HttpPost]
+        [Consumes("application/json")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ValidationProblemDetails),StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Transfer([FromBody] TransferRequest request)
         {
-            try
+            var command = new TransferCommand(
+                request.FromAccountId,
+                request.ToAccountId,
+                request.Amount);
+
+            var result = await _mediator.Send(command);
+
+            return result switch
             {
-                var validationResult = await _validator.ValidateAsync(request);
-                if (!validationResult.IsValid)
-                {
-                    return ValidationProblem(new ValidationProblemDetails(validationResult.ToDictionary()));
-                }
-
-                var fromAccount = _accountRepository.GetById(request.FromAccountId);
-                var toAccount = _accountRepository.GetById(request.ToAccountId);
-
-                if (fromAccount == null || toAccount == null) 
-                    return NotFound("One of account not found");
-
-                if (fromAccount.Balance < request.Amount)
-                    return BadRequest("Insufficient funds");
-
-                fromAccount.Balance -= request.Amount;
-                toAccount.Balance += request.Amount;
-
-                _accountRepository.Update(fromAccount);
-                _accountRepository.Update(toAccount);
-
-
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { error = ex.Message });
-            }
+                TransferResult.Success => Ok(),
+                TransferResult.AccountNotFound => NotFound("One of accounts not found"),
+                TransferResult.InsufficientFunds => BadRequest("Insufficient funds"),
+                TransferResult.SameAccount => BadRequest("Cannot transfer to same account"),
+                TransferResult.CurrencyMismatch => BadRequest("Currency mismatch"),
+                _ => StatusCode(500)
+            };
         }
+
     }
 }

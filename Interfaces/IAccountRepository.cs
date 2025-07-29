@@ -19,5 +19,6 @@ namespace AccountService.Interfaces
         IEnumerable<Account> GetByOwnerId(Guid ownerId);
         IEnumerable<Account> GetByCurrency(string currency);
         IEnumerable<Account> GetByType(AccountType type);
+       
     }
 }
