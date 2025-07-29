@@ -48,7 +48,7 @@ namespace AccountService.Controllers
                 return Ok(result);
             }
 
-            // <summary>
+            /// <summary>
             /// Получает информацию о конкретном счете по ID
             /// </summary>
             /// <param name="id">Идентификатор счета</param>

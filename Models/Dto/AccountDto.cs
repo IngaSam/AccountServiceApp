@@ -1,6 +1,6 @@
 ﻿namespace AccountService.Models.Dto
 {
-    // <summary>
+    /// <summary>
     /// DTO для представления информации о банковском счете
     /// </summary>
     public class AccountDto

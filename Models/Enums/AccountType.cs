@@ -3,7 +3,8 @@ using System.Text.Json.Serialization;
 
 namespace AccountService.Models.Enums
 {
-    [JsonConverter(typeof(JsonStringEnumConverter))] //Для реализации в строку
+
+    [JsonConverter(typeof(JsonStringEnumConverter))] 
     public enum AccountType
     {
         [Description("Текущий счёт")]

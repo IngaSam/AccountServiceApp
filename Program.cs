@@ -1,3 +1,4 @@
+using AccountService.Api.Documentation;
 using AccountService.Behaviors;
 using AccountService.Controllers;
 using AccountService.Features.Accounts.Commands;
@@ -13,6 +14,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
+using Swashbuckle.AspNetCore.Filters;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,12 +37,20 @@ builder.Services.AddSwaggerGen(c =>
         Version = "v1",
         Description = "Микросервис для управления банковскими счетами"
     });
-    //c.EnableAnnotations();
-    // Подключаем XML-документацию
+    // Включаем XML-комментарии
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath);
+
+    // Поддержка примеров запросов
+    c.ExampleFilters();
+
+    // Отображение enum как строк
+    c.UseInlineDefinitionsForEnums();
 });
+builder.Services.AddSwaggerExamplesFromAssemblyOf<AccountExamples>();
+builder.Services.AddSwaggerExamplesFromAssemblyOf<TransactionExamples>();
+builder.Services.AddSwaggerExamplesFromAssemblyOf<TransferExamples>();
 
 //регистрация репозиторие и сервисов
 builder.Services.AddSingleton<IAccountRepository, AccountRepository>();
@@ -83,7 +93,10 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Account Service v1");
+    });
 }
 
 app.UseHttpsRedirection();
