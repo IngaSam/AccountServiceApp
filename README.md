@@ -17,10 +17,10 @@
 2. Запустите проект:
 ```bash
 dotnet run --project AccountService.Api
-Откройте Swagger UI:
 
-text
-http://localhost:5000/swagger
+3. Откройте Swagger UI:
+```http://localhost:5000/swagger
+
 📚 API Endpoints
 Метод	Путь	Описание
 POST	/api/accounts	Создать новый счет
@@ -28,16 +28,14 @@ GET	/api/accounts	Получить все счета
 GET	/api/accounts/{id}	Получить счет по ID
 PUT	/api/accounts/{id}	Обновить счет
 POST	/api/transactions	Создать транзакцию
+
+
 🛠 Технологии
-ASP.NET Core 6
-
-MediatR (CQRS)
-
-FluentValidation
-
-Entity Framework Core
-
-Swagger/OpenAPI
+ - ASP.NET Core 6
+ - MediatR (CQRS)
+ - FluentValidation
+ - Entity Framework Core
+ - Swagger/OpenAPI
 
 🗄 Модели данных
 classDiagram
