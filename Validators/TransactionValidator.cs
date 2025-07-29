@@ -1,5 +1,4 @@
-﻿using System.Data;
-using FluentValidation;
+﻿using FluentValidation;
 using AccountService.Models;
 
 namespace AccountService.Validators
@@ -19,7 +18,7 @@ namespace AccountService.Validators
 
         private bool BeValidCurrency(string currency)
         {
-            string[] validCurrencies = { "RUB", "USD", "EUR" };
+            string[] validCurrencies = ["RUB", "USD", "EUR"];
             return validCurrencies.Contains(currency);
         }
     }

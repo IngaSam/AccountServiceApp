@@ -7,35 +7,22 @@ using MediatR;
 
 namespace AccountService.Features.Accounts.Handlers
 {
-    public class CreateAccountHandler : IRequestHandler<CreateAccountCommand, Account>
+    public class CreateAccountHandler(
+        IAccountRepository repository,
+        IClientVerificationService clientVerification,
+        ICurrencyService currencyService,
+        IValidator<CreateAccountCommand> validator)
+        : IRequestHandler<CreateAccountCommand, Account>
     {
-        private readonly IAccountRepository _repository;
-        private  readonly IClientVerificationService _clientVerification;
-        private readonly ICurrencyService _currencyService;
-        private readonly IValidator<CreateAccountCommand> _validator;
-
-        public CreateAccountHandler(
-            IAccountRepository repository,
-            IClientVerificationService clientVerification,
-            ICurrencyService currencyService,
-            IValidator<CreateAccountCommand> validator
-        )
-        {
-            _repository =   repository;
-            _clientVerification = clientVerification;
-            _currencyService = currencyService;
-            _validator = validator;
-        }
-
         public async Task<Account> Handle( CreateAccountCommand request, CancellationToken cancellationToken)
         {
             // Валидация команды
-            await _validator.ValidateAndThrowAsync(request, cancellationToken);
+            await validator.ValidateAndThrowAsync(request, cancellationToken);
 
             // Проверка бизнес-правил
-            if (!await _clientVerification.ClientExistsAsync(request.OwnerId))
+            if (!await clientVerification.ClientExistsAsync(request.OwnerId))
                 throw new ValidationException($"Client with id {request.OwnerId} not found");
-            if (!_currencyService.IsCurrencySupported(request.Currency))
+            if (!currencyService.IsCurrencySupported(request.Currency))
                 throw new ValidationException($"Currency {request.Currency} is not supported currency");
 
 
@@ -53,7 +40,7 @@ namespace AccountService.Features.Accounts.Handlers
                     Balance = 0
 
                 };
-                _repository.Add(account);
+                repository.Add(account);
 
                 return account;
 

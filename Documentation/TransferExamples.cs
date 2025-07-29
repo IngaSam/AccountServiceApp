@@ -1,7 +1,7 @@
 ﻿using AccountService.Features.Transfers.Commands;
 using Swashbuckle.AspNetCore.Filters;
 
-namespace AccountService.Api.Documentation
+namespace AccountService.Documentation
 {
     public class TransferExamples : IMultipleExamplesProvider<TransferCommand>
     {

@@ -1,5 +1,4 @@
 ﻿using AccountService.Interfaces;
-using System.Threading.Tasks;
 
 namespace AccountService.Services
 {

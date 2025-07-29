@@ -2,7 +2,7 @@
 using AccountService.Models.Enums;
 using Swashbuckle.AspNetCore.Filters;
 
-namespace AccountService.Api.Documentation
+namespace AccountService.Documentation
 {
     public class AccountExamples : IMultipleExamplesProvider<CreateAccountCommand>
     {

@@ -15,20 +15,20 @@
         /// Валюта транзакции (ISO 4217)
         /// </summary>
         /// <example>RUB</example>
-        public string Currency { get; set; }
+        public required string Currency { get; set; }
 
-        // <summary>
+        /// <summary>
         /// Тип транзакции: Credit (зачисление) или Debit (списание)
         /// </summary>
         /// <example>Credit</example>
         /// 
-        public string Type { get; set; }
+        public required string Type { get; set; }
 
         /// <summary>
         /// Описание транзакции
         /// </summary>
         /// <example>Пополнение через мобильное приложение</example>
-        public string Description { get; set; }
+        public required string Description { get; set; }
 
     }
 }

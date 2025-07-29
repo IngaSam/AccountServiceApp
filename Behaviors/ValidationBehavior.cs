@@ -15,7 +15,7 @@ namespace AccountService.Behaviors
             RequestHandlerDelegate<TResponse> next,
             CancellationToken ct)
         {
-            if (!validators.Any()) return await next();
+            if (!validators.Any()) return await next(ct);
 
             var context = new ValidationContext<TRequest>(request);
             var failures = validators
@@ -27,7 +27,7 @@ namespace AccountService.Behaviors
             if (failures.Count != 0)
                 throw new ValidationException(failures);
 
-            return await next();
+            return await next(ct);
         }
 
     }

@@ -3,30 +3,23 @@ using AccountService.Interfaces;
 using AccountService.Models;
 using AccountService.Models.Enums;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace AccountService.Features.Transactions.Handlers
 {
-    public class CreateTransactionHandler : IRequestHandler<CreateTransactionCommand, Transaction>
+    public class CreateTransactionHandler(
+        ITransactionRepository transactionRepository,
+        IAccountRepository accountRepository,
+        ILogger<CreateTransactionHandler> logger)
+        : IRequestHandler<CreateTransactionCommand, Transaction>
     {
-        private readonly ITransactionRepository _transactionRepository;
-        private readonly IAccountRepository _accountRepository;
-        private readonly ILogger<CreateTransactionHandler> _logger;
+        private readonly ITransactionRepository _transactionRepository = transactionRepository ??
+                                                                         throw new ArgumentNullException(nameof(transactionRepository));
+        private readonly IAccountRepository _accountRepository = accountRepository ??
+                                                                 throw new ArgumentNullException(nameof(accountRepository));
+        private readonly ILogger<CreateTransactionHandler> _logger = logger ??
+                                                                     throw new ArgumentNullException(nameof(logger));
 
-        public CreateTransactionHandler(
-            ITransactionRepository transactionRepository,
-            IAccountRepository accountRepository,
-            ILogger<CreateTransactionHandler> logger)
-        {
-            _transactionRepository = transactionRepository ??
-                throw new ArgumentNullException(nameof(transactionRepository));
-            _accountRepository = accountRepository ??
-                throw new ArgumentNullException(nameof(accountRepository));
-            _logger = logger ??
-                throw new ArgumentNullException(nameof(logger));
-        }
-
-        public async Task<Transaction> Handle(CreateTransactionCommand request, CancellationToken ct)
+        public Task<Transaction> Handle(CreateTransactionCommand request, CancellationToken ct)
         {
             // 1. Получаем счет
             var account = _accountRepository.GetById(request.AccountId);
@@ -58,7 +51,7 @@ namespace AccountService.Features.Transactions.Handlers
             _accountRepository.Update(account);
 
             _logger.LogInformation($"Created transaction {transaction.Id}");
-            return transaction;
+            return Task.FromResult(transaction);
         }
     }
 }

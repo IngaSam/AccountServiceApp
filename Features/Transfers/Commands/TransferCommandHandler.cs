@@ -3,64 +3,56 @@ using MediatR;
 
 namespace AccountService.Features.Transfers.Commands
 {
-    public class TransferCommandHandler : IRequestHandler<TransferCommand, TransferResult>
+    public class TransferCommandHandler(
+        IAccountRepository repository,
+        ILogger<TransferCommandHandler> logger)
+        : IRequestHandler<TransferCommand, TransferResult>
     {
-        private readonly IAccountRepository _repository;
-        private readonly ILogger<TransferCommandHandler> _logger;
-
-        public TransferCommandHandler(
-            IAccountRepository repository,
-            ILogger<TransferCommandHandler> logger)
+        public Task<TransferResult> Handle(TransferCommand request, CancellationToken ct)
         {
-            _repository = repository;
-            _logger = logger;
-        }
+            logger.LogInformation($"Transfer from {request.FromAccountId} to {request.ToAccountId}");
 
-        public async Task<TransferResult> Handle(TransferCommand request, CancellationToken ct)
-        {
-            _logger.LogInformation($"Transfer from {request.FromAccountId} to {request.ToAccountId}");
-
-            var fromAccount = _repository.GetById(request.FromAccountId);
+            var fromAccount = repository.GetById(request.FromAccountId);
             if (fromAccount == null)
             {
-                _logger.LogWarning($"FromAccount not found: {request.FromAccountId}");
-                return TransferResult.AccountNotFound;
+                logger.LogWarning($"FromAccount not found: {request.FromAccountId}");
+                return Task.FromResult(TransferResult.AccountNotFound);
             }
 
-            var toAccount = _repository.GetById(request.ToAccountId);
+            var toAccount = repository.GetById(request.ToAccountId);
             if (toAccount == null)
             {
-                _logger.LogWarning($"ToAccount not found: {request.ToAccountId}");
-                return TransferResult.AccountNotFound;
+                logger.LogWarning($"ToAccount not found: {request.ToAccountId}");
+                return Task.FromResult(TransferResult.AccountNotFound);
             }
 
             if (fromAccount.Id == toAccount.Id)
             {
-                _logger.LogWarning("Cannot transfer to same account");
-                return TransferResult.SameAccount;
+                logger.LogWarning("Cannot transfer to same account");
+                return Task.FromResult(TransferResult.SameAccount);
             }
 
             if (fromAccount.Currency != toAccount.Currency)
             {
-                _logger.LogWarning($"Currency mismatch: {fromAccount.Currency} != {toAccount.Currency}");
-                return TransferResult.CurrencyMismatch;
+                logger.LogWarning($"Currency mismatch: {fromAccount.Currency} != {toAccount.Currency}");
+                return Task.FromResult(TransferResult.CurrencyMismatch);
             }
 
             if (fromAccount.Balance < request.Amount)
             {
-                _logger.LogWarning($"Insufficient funds: {fromAccount.Balance} < {request.Amount}");
-                return TransferResult.InsufficientFunds;
+                logger.LogWarning($"Insufficient funds: {fromAccount.Balance} < {request.Amount}");
+                return Task.FromResult(TransferResult.InsufficientFunds);
             }
 
             // Выполняем перевод
             fromAccount.Balance -= request.Amount;
             toAccount.Balance += request.Amount;
 
-            _repository.Update(fromAccount);
-            _repository.Update(toAccount);
+            repository.Update(fromAccount);
+            repository.Update(toAccount);
 
-            _logger.LogInformation($"Transfer completed: {request.Amount} {fromAccount.Currency}");
-            return TransferResult.Success;
+            logger.LogInformation($"Transfer completed: {request.Amount} {fromAccount.Currency}");
+            return Task.FromResult(TransferResult.Success);
         }
     }
 }

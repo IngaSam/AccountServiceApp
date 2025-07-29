@@ -1,9 +1,7 @@
 ﻿using AccountService.Features.Transactions.Commands;
 using AccountService.Features.Transactions.Queries;
-using AccountService.Interfaces;
 using AccountService.Models;
 using AccountService.Models.Dto;
-using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,15 +12,8 @@ namespace AccountService.Controllers
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
-    public class TransactionsController : ControllerBase
+    public class TransactionsController(IMediator mediator) : ControllerBase
     {
-        private readonly IMediator _mediator;
-
-        public TransactionsController(IMediator mediator)
-        {
-            _mediator = mediator;
-        }
-
         /// <summary>
         /// Создает новую транзакцию
         /// </summary>
@@ -56,14 +47,14 @@ namespace AccountService.Controllers
                     request.Type,
                     request.Description);
 
-                var transaction = await _mediator.Send(command);
+                var transaction = await mediator.Send(command);
                 return Created($"/api/transactions/{transaction.Id}", transaction);
             }
             catch (KeyNotFoundException ex)
             {
                 return NotFound(ex.Message);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, "Internal server error");
             }
@@ -81,7 +72,7 @@ namespace AccountService.Controllers
         public async Task<IActionResult> GetById(Guid id)
         {
             var query = new GetTransactionByIdQuery(id);
-            var transaction = await _mediator.Send(query);
+            var transaction = await mediator.Send(query);
             return transaction != null ? Ok(transaction) : NotFound();
         }
     }

@@ -8,7 +8,7 @@ namespace AccountService.Validators
     {
         public CreateAccountRequestValidator()
         {
-            RuleFor(x => x.OwnerId).NotEmpty().WithMessage("OwnerId обязателен"); ;
+            RuleFor(x => x.OwnerId).NotEmpty().WithMessage("OwnerId обязателен");
             RuleFor(x => x.Type).IsInEnum();
             RuleFor(x => x.Currency).Length(3).Must(BeValidCurrency)
                 .WithMessage("Валюта должна быть RUB, USD или EUR");
@@ -18,9 +18,9 @@ namespace AccountService.Validators
 
         }
 
-        private bool BeValidCurrency(string currency)
+        private static bool BeValidCurrency(string currency)
         {
-            string[] validCurrencies = { "RUB", "USD", "EUR" };
+            string[] validCurrencies = ["RUB", "USD", "EUR"];
             return validCurrencies.Contains(currency);
         }
     }

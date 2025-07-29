@@ -5,21 +5,14 @@ using MediatR;
 
 namespace AccountService.Features.Accounts.Handlers
 {
-    public class GetAllAccountsHandler :
+    public class GetAllAccountsHandler(IAccountRepository repository) :
         IRequestHandler<GetAllAccountsQuery, IEnumerable<Account>>
     {
-        private readonly IAccountRepository _repository;
-
-        public GetAllAccountsHandler(IAccountRepository repository)
-        {
-            _repository = repository;
-        }
-
-        public async Task<IEnumerable<Account>> Handle(
+        public Task<IEnumerable<Account>> Handle(
             GetAllAccountsQuery request,
             CancellationToken cancellationToken)
         {
-            var query = _repository.GetAll().AsQueryable();
+            var query = repository.GetAll().AsQueryable();
 
             if (!string.IsNullOrEmpty(request.Currency))
                 query = query.Where(a => a.Currency == request.Currency);
@@ -27,11 +20,11 @@ namespace AccountService.Features.Accounts.Handlers
             if (request.Type.HasValue)
                 query = query.Where(a => a.Type == request.Type.Value);
 
-            return  query
+            return Task.FromResult<IEnumerable<Account>>(query
                 .Skip((request.Page - 1) * request.PageSize)
                 .Take(request.PageSize)
                 //.AsEnumerable();
-                .ToList();
+                .ToList());
         }
     }
 }

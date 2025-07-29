@@ -1,5 +1,4 @@
-﻿using System.Transactions;
-using AccountService.Models.Enums;
+﻿using AccountService.Models.Enums;
 
 namespace AccountService.Models
 {
@@ -8,12 +7,12 @@ namespace AccountService.Models
         public Guid Id { get; set; }                  // Уникальный идентификатор
         public Guid OwnerId { get; set; }            // ID владельца (клиента)
         public AccountType Type { get; set; }         // Тип счёта (Checking|Deposit|Credit)
-        public string Currency { get; set; }          // Валюта (ISO 4217: "RUB", "USD")
+        public required string Currency { get; set; }          // Валюта (ISO 4217: "RUB", "USD")
         public decimal Balance { get; set; }          // Текущий баланс
         public decimal? InterestRate { get; set; }    // Процентная ставка (для вкладов/кредитов) Nullable, только для Deposit/Credit
         public DateTime OpenDate { get; set; }        // Дата открытия
         public DateTime? CloseDate { get; set; }      // Дата закрытия (если счёт закрыт)
-        public List<Transaction> Transactions { get; set; } = new(); // Список транзакций
+        public List<Transaction> Transactions { get; set; } = []; // Список транзакций
 
     }
 }

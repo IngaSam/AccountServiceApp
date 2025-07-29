@@ -1,10 +1,7 @@
-﻿using AccountService.Interfaces;
-using AccountService.Models;
+﻿using AccountService.Models;
 using AccountService.Models.Dto;
 using AccountService.Models.Enums;
-using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
 using AccountService.Features.Accounts.Commands;
 using AccountService.Features.Accounts.Queries;
 using MediatR;
@@ -17,16 +14,9 @@ namespace AccountService.Controllers
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
-    public class AccountsController : ControllerBase
+    public class AccountsController(IMediator mediator) : ControllerBase
     {
-            private readonly IMediator _mediator;
-
-            public AccountsController(IMediator mediator)
-            {
-                _mediator = mediator;
-            }
-
-            /// <summary>
+        /// <summary>
             /// Получает список всех счетов с возможностью фильтрации
             /// </summary>
             /// <param name="currency">Фильтр по валюте (например, "RUB")</param>
@@ -44,7 +34,7 @@ namespace AccountService.Controllers
                     [FromQuery] int pageSize = 10)
             {
                 var query = new GetAllAccountsQuery(currency, type, page, pageSize);
-                var result = await _mediator.Send(query);
+                var result = await mediator.Send(query);
                 return Ok(result);
             }
 
@@ -61,44 +51,53 @@ namespace AccountService.Controllers
             public async Task<IActionResult> GetById(Guid id)
             {
                 var query = new GetAccountByIdQuery(id);
-                var account = await _mediator.Send(query);
+                var account = await mediator.Send(query);
                 return account != null ? Ok(account) : NotFound();
             }
 
 
             /// <summary>
-            /// Получает выписку по счету
+            /// Получение выписки по счёту за указанный период
             /// </summary>
-            /// <param name="id">Идентификатор счета</param>
-            /// <param name="fromDate">Дата начала периода (необязательно)</param>
-            /// <returns>Выписка по счету</returns>
-            /// <response code="200">Успешный запрос</response>
-            /// <response code="404">Счет не найден</response>
-        [HttpGet("{id}/statement")]
+            /// <param name="accountId">Идентификатор счета (GUID)</param>
+            /// <param name="fromDate">Начальная дата периода (опционально, по умолчанию 30 дней назад)</param>
+            /// <param name="toDate">Конечная дата периода (опционально, по умолчанию текущая дата)</param>
+            /// <response code="200">Возвращает выписку по счёту</response>
+            /// <response code="400">Некорректные параметры запроса</response>
+            /// <response code="404">Счёт не найден</response>
+            [HttpGet("{accountId}/statement")]
             [ProducesResponseType(typeof(AccountStatement), StatusCodes.Status200OK)]
+            [ProducesResponseType(StatusCodes.Status400BadRequest)]
             [ProducesResponseType(StatusCodes.Status404NotFound)]
-            public async Task<IActionResult> GetStatement(Guid id, [FromQuery] DateTime? fromDate)
+            public async Task<IActionResult> GetStatement(
+                [FromRoute] Guid accountId,  // Явно указываем FromRoute
+                [FromQuery] DateTime? fromDate,
+                [FromQuery] DateTime? toDate)
             {
-                var query = new GetAccountStatementQuery(id, fromDate);
-                var statement = await _mediator.Send(query);
+                var query = new GetAccountStatementQuery(
+                    AccountId: accountId,
+                    FromDate: fromDate,
+                    ToDate: toDate);
+
+                var statement = await mediator.Send(query);
                 return Ok(statement);
             }
 
-        
-            /// <summary>
-            /// Получает список транзакций по указанному счёту.
-            /// </summary>
-            /// <param name="id">Уникальный идентификатор счёта (GUID).</param>
-            /// <returns>Список транзакций в формате JSON.</returns>
-            /// <response code="200">Успешный запрос. Возвращает список транзакций.</response>
-            /// <response code="404">Счёт не найден.</response>
-           [HttpGet("{id}/transactions")]
+
+        /// <summary>
+        /// Получает список транзакций по указанному счёту.
+        /// </summary>
+        /// <param name="id">Уникальный идентификатор счёта (GUID).</param>
+        /// <returns>Список транзакций в формате JSON.</returns>
+        /// <response code="200">Успешный запрос. Возвращает список транзакций.</response>
+        /// <response code="404">Счёт не найден.</response>
+        [HttpGet("{id}/transactions")]
             [ProducesResponseType(typeof(IEnumerable<Transaction>), StatusCodes.Status200OK)]
             [ProducesResponseType(StatusCodes.Status404NotFound)]
             public async Task<IActionResult> GetTransactions(Guid id)
                 {
                     var query = new GetTransactionsByAccountIdQuery(id);
-                    var transactions = await _mediator.Send(query);
+                    var transactions = await mediator.Send(query);
                     return Ok(transactions);
                 }
 
@@ -122,7 +121,7 @@ namespace AccountService.Controllers
                         request.Currency,
                         request.InterestRate
                     );
-                    var account = await _mediator.Send(command);
+                    var account = await mediator.Send(command);
                     return Created($"/accounts/{account.Id}", account);
                
             }
@@ -144,7 +143,7 @@ namespace AccountService.Controllers
                 [FromBody] UpdateAccountRequest request)
             {
                 var command = new UpdateAccountCommand(id, request.InterestRate, request.CloseDate);
-                var account = await _mediator.Send(command);
+                var account = await mediator.Send(command);
                 return account != null ? Ok(account) : NotFound();
             }
 
@@ -167,7 +166,7 @@ namespace AccountService.Controllers
                 [FromBody] JsonPatchDocument<UpdateAccountRequest> patchDoc)
             {
                 var command = new PatchAccountCommand(id, patchDoc);
-                var account = await _mediator.Send(command);
+                var account = await mediator.Send(command);
                 return account != null ? Ok(account) : NotFound();
             }
 
@@ -186,7 +185,7 @@ namespace AccountService.Controllers
             public async Task<IActionResult> Delete(Guid id)
             {
             var command = new DeleteAccountCommand(id);
-            var result = await _mediator.Send(command);
+            var result = await mediator.Send(command);
             return result ? NoContent() : NotFound();
             }
     }

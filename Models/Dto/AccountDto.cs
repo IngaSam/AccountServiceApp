@@ -15,13 +15,13 @@
         /// Тип счета (Checking|Deposit|Credit)
         /// </summary>
         /// <example>Deposit</example>
-        public string Type { get; set; }  
+        public required string Type { get; set; }  
        
         /// <summary>
         /// Валюта счета (3-х буквенный код ISO)
         /// </summary>
         /// <example>RUB</example>
-        public string Currency { get; set; }
+        public required string Currency { get; set; }
 
         /// <summary>
         /// Текущий баланс

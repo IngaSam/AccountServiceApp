@@ -29,6 +29,6 @@ namespace AccountService.Models.Dto
         /// Описание транзакции (макс. 500 символов)
         /// </summary>
         /// <example>Пополнение через кассу</example>
-        public string Description { get; set; }
+        public required string Description { get; set; }
     }
 }

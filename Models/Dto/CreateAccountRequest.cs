@@ -24,7 +24,7 @@ namespace AccountService.Models.Dto
         /// Валюта счета (3-х буквенный код ISO)
         /// </summary>
         /// <example>RUB</example>
-        public string Currency { get; set; }
+        public required string Currency { get; set; }
 
         /// <summary>
         /// Процентная ставка (только для Deposit/Credit)

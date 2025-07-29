@@ -5,18 +5,12 @@ using MediatR;
 
 namespace AccountService.Features.Transactions.Handlers
 {
-    public class GetTransactionByIdHandler : IRequestHandler<GetTransactionByIdQuery, Transaction?>
+    public class GetTransactionByIdHandler(ITransactionRepository repository)
+        : IRequestHandler<GetTransactionByIdQuery, Transaction?>
     {
-        private readonly ITransactionRepository _repository;
-
-        public GetTransactionByIdHandler(ITransactionRepository repository)
-        {
-            _repository = repository;
-        }
-
         public Task<Transaction?> Handle(GetTransactionByIdQuery request, CancellationToken ct)
         {
-            var transaction = _repository.GetById(request.Id);
+            var transaction = repository.GetById(request.Id);
             return Task.FromResult(transaction);
         }
     }

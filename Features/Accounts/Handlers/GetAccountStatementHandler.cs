@@ -5,41 +5,33 @@ using MediatR;
 
 namespace AccountService.Features.Accounts.Handlers
 {
-    public class GetAccountStatementHandler : IRequestHandler<GetAccountStatementQuery, AccountStatement>
+    public class GetAccountStatementHandler(
+        IAccountRepository accountRepository,
+        ITransactionRepository transactionRepository)
+        : IRequestHandler<GetAccountStatementQuery, AccountStatement>
     {
-        private readonly IAccountRepository _accountRepository;
-        private readonly ITransactionRepository _transactionRepository;
-
-        public GetAccountStatementHandler(
-            IAccountRepository accountRepository,
-            ITransactionRepository transactionRepository)
+        public Task<AccountStatement> Handle(GetAccountStatementQuery request, CancellationToken ct)
         {
-            _accountRepository = accountRepository;
-            _transactionRepository = transactionRepository;
-        }
+            var account = accountRepository.GetById(request.AccountId);
+            if (account == null) return Task.FromResult<AccountStatement>(null!);
 
-        public async Task<AccountStatement> Handle(GetAccountStatementQuery request, CancellationToken ct)
-        {
-            var account = _accountRepository.GetById(request.AccountId);
-            if (account == null) return null;
-
-            var transactions = _transactionRepository
+            var transactions = transactionRepository
                 .GetByAccountId(request.AccountId)
                 .Where(t => request.FromDate == null || t.DateTime >= request.FromDate)
                 .ToList();
 
-            return new AccountStatement
+            return Task.FromResult(new AccountStatement
             {
                 AccountId = account.Id,
                 PeriodStart = request.FromDate ?? account.OpenDate,
                 PeriodEnd = DateTime.UtcNow,
-                OpeningBalance = request.FromDate == null ? 0 : CalculateOpeningBalance(request.AccountId, request.FromDate.Value),
+                OpeningBalance = request.FromDate == null ? 0 : CalculateOpeningBalance(),
                 ClosingBalance = account.Balance,
                 Transactions = transactions
-            };
+            });
         }
 
-        private decimal CalculateOpeningBalance(Guid accountId, DateTime fromDate)
+        private decimal CalculateOpeningBalance()
         {
             // Реализуйте логику расчета начального баланса
             // Например: сумма всех транзакций до fromDate

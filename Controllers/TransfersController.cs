@@ -11,15 +11,8 @@ namespace AccountService.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Produces("application/json")]
-    public class TransfersController: ControllerBase
+    public class TransfersController(IMediator mediator) : ControllerBase
     {
-        private readonly IMediator _mediator;
-
-        public TransfersController(IMediator mediator)
-        {
-            _mediator = mediator;
-        }
-
         /// <summary>
         /// Выполняет перевод между счетами
         /// </summary>
@@ -50,7 +43,7 @@ namespace AccountService.Controllers
                 request.ToAccountId,
                 request.Amount);
 
-            var result = await _mediator.Send(command);
+            var result = await mediator.Send(command);
 
             return result switch
             {

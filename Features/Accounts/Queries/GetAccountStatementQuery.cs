@@ -5,6 +5,7 @@ namespace AccountService.Features.Accounts.Queries
 {
     public record GetAccountStatementQuery(
         Guid AccountId,
-        DateTime? FromDate
+        DateTime? FromDate,
+        DateTime? ToDate = null
     ) : IRequest<AccountStatement>;
 }

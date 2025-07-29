@@ -1,17 +1,13 @@
 ﻿using AccountService.Interfaces;
 using AccountService.Models;
 using AccountService.Models.Enums;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
 
 namespace AccountService.Repositories
 {
     public class AccountRepository : IAccountRepository
     {
-        private readonly List<Account> _accounts = new();
-        private readonly object _lock = new();
+        private readonly List<Account> _accounts = [];
+        private readonly Lock _lock = new();
 
         public IEnumerable<Account> GetAll()
         {
@@ -23,11 +19,18 @@ namespace AccountService.Repositories
 
         public Account? GetById(Guid id)
         {
-            
+            lock (_lock)
+            {
                 return _accounts.FirstOrDefault(a => a.Id == id);
-            
+            }
         }
-
+        //public Task<Account?> GetByIdAsync(Guid id)
+        //{
+        //    lock (_lock)
+        //    {
+        //        return Task.FromResult(_accounts.FirstOrDefault(a => a.Id == id));
+        //    }
+        //}
         public void Add(Account account)
         {
             if (account == null)

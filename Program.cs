@@ -1,19 +1,16 @@
-using AccountService.Api.Documentation;
 using AccountService.Behaviors;
-using AccountService.Controllers;
 using AccountService.Features.Accounts.Commands;
 using AccountService.Features.Accounts.Validators;
 using AccountService.Features.Transfers.Commands;
 using AccountService.Filters;
 using AccountService.Interfaces;
-using AccountService.Models.Dto;
 using AccountService.Repositories;
 using AccountService.Services;
 using AccountService.Validators;
 using FluentValidation;
-using MediatR;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
+using AccountService.Documentation;
 using Swashbuckle.AspNetCore.Filters;
 
 
@@ -60,7 +57,7 @@ builder.Services.AddSingleton<ITransactionRepository, TransactionRepository>();
 
 // Регистрация валидаторов
 builder.Services.AddScoped<IValidator<CreateAccountCommand>, CreateAccountCommandValidator>();
-builder.Services.AddValidatorsFromAssemblyContaining<AccountValidator>(ServiceLifetime.Scoped);
+builder.Services.AddValidatorsFromAssemblyContaining<AccountValidator>();
 builder.Services.AddScoped<IValidator<UpdateAccountCommand>, UpdateAccountCommandValidator>();
 
 //builder.Services.AddScoped<IValidator<CreateAccountRequest>, CreateAccountRequestValidator>();
@@ -68,7 +65,7 @@ builder.Services.AddScoped<IValidator<UpdateAccountCommand>, UpdateAccountComman
 //builder.Services.AddScoped<IValidator<CreateTransactionRequest>, CreateTransactionRequestValidator>();
 //builder.Services.AddScoped<IValidator<TransferRequest>, TransferRequestValidator>();
 
-// Настройка MediatR
+
 builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);

@@ -1,8 +1,4 @@
 ﻿namespace AccountService.Exceptions
 {
-    public class CurrencyNotSupportedException : Exception
-    {
-        public CurrencyNotSupportedException(string currency)
-            : base($"Currency '{currency}' is not supported.") { }
-    }
+    public class CurrencyNotSupportedException(string currency) : Exception($"Currency '{currency}' is not supported.");
 }

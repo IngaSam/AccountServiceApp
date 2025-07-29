@@ -1,6 +1,4 @@
 ﻿using AccountService.Models;
-using System;
-using System.Collections.Generic;
 using AccountService.Models.Enums;
 
 namespace AccountService.Interfaces
@@ -10,6 +8,7 @@ namespace AccountService.Interfaces
         //Основные CRUD-операции
         IEnumerable<Account> GetAll();
         Account? GetById(Guid id);
+        //Task<Account?> GetByIdAsync(Guid id);
         void Add(Account account);
         void Update(Account account);
         void Delete(Guid id);

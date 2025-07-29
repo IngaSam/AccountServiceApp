@@ -3,22 +3,14 @@ using AccountService.Interfaces;
 using AccountService.Models;
 using AccountService.Models.Dto;
 using MediatR;
-using Microsoft.AspNetCore.JsonPatch;
 
 namespace AccountService.Features.Accounts.Handlers
 {
-    public class PatchAccountHandler : IRequestHandler<PatchAccountCommand, Account?>
+    public class PatchAccountHandler(IAccountRepository repository) : IRequestHandler<PatchAccountCommand, Account?>
     {
-        private readonly IAccountRepository _repository;
-
-        public PatchAccountHandler(IAccountRepository repository)
-        {
-            _repository = repository;
-        }
-
         public Task<Account?> Handle(PatchAccountCommand request, CancellationToken ct)
         {
-            var account = _repository.GetById(request.Id);
+            var account = repository.GetById(request.Id);
             if (account == null) return Task.FromResult<Account?>(null);
 
             var patchDoc = request.PatchDoc;
@@ -37,7 +29,7 @@ namespace AccountService.Features.Accounts.Handlers
             if (accountToPatch.CloseDate.HasValue)
                 account.CloseDate = accountToPatch.CloseDate.Value;
 
-            _repository.Update(account);
+            repository.Update(account);
             return Task.FromResult<Account?>(account);
         }
     }

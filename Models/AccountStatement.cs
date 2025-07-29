@@ -33,6 +33,6 @@
         /// <summary>
         /// Список транзакций за период
         /// </summary>
-        public List<Transaction> Transactions { get; set; } = new();
+        public List<Transaction> Transactions { get; set; } = [];
     }
 }

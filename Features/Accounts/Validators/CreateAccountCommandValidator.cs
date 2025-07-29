@@ -3,7 +3,7 @@ using AccountService.Models.Configs;
 using AccountService.Models.Enums;
 using FluentValidation;
 
-namespace AccountService.Validators
+namespace AccountService.Features.Accounts.Validators
 {
     public class CreateAccountCommandValidator : AbstractValidator<CreateAccountCommand>
     {
