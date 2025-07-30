@@ -1,17 +1,18 @@
 using AccountService.Behaviors;
+using AccountService.Documentation;
 using AccountService.Features.Accounts.Commands;
 using AccountService.Features.Accounts.Validators;
 using AccountService.Features.Transfers.Commands;
 using AccountService.Filters;
 using AccountService.Interfaces;
+using AccountService.Models.Configs;
 using AccountService.Repositories;
 using AccountService.Services;
 using AccountService.Validators;
 using FluentValidation;
 using Microsoft.OpenApi.Models;
-using System.Reflection;
-using AccountService.Documentation;
 using Swashbuckle.AspNetCore.Filters;
+using System.Reflection;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -52,7 +53,7 @@ builder.Services.AddSwaggerExamplesFromAssemblyOf<TransferExamples>();
 //регистрация репозиторие и сервисов
 builder.Services.AddSingleton<IAccountRepository, AccountRepository>();
 builder.Services.AddSingleton<IClientVerificationService, ClientVerificationServiceStub>();
-builder.Services.AddSingleton<ICurrencyService, CurrencyServiceStub>();
+builder.Services.AddSingleton<ICurrencyService, CurrencyService>();
 builder.Services.AddSingleton<ITransactionRepository, TransactionRepository>();
 
 // Регистрация валидаторов
@@ -82,7 +83,8 @@ builder.Services.AddScoped<ApiExceptionFilter>();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
-//builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+// Чтение конфигурации
+builder.Services.Configure<CurrencySettings>(builder.Configuration.GetSection("CurrencySettings"));
 
 var app = builder.Build();
 

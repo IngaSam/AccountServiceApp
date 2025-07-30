@@ -32,7 +32,7 @@ namespace AccountService.Features.Accounts.Handlers
                     Id = Guid.NewGuid(),
                     OwnerId = request.OwnerId,
                     Type = request.Type,
-                    Currency = request.Currency,
+                    Currency = request.Currency.ToUpper(),
                      InterestRate = request.Type != AccountType.Checking
                         ? request.InterestRate
                         : null,

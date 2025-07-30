@@ -4,7 +4,7 @@ using AccountService.Models.Enums;
 
 namespace AccountService.Validators
 {
-    public class CreateAccountRequestValidator: AbstractValidator<CreateAccountRequest>
+    public class CreateAccountRequestValidator : AbstractValidator<CreateAccountRequest>
     {
         public CreateAccountRequestValidator()
         {
