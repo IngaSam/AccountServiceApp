@@ -21,6 +21,7 @@ namespace AccountService.Filters
                             Message = e.ErrorMessage
                         })
                     }),
+                
 
                 // Обработка бизнес-ошибок
                 AccountNotFoundException ex => new NotFoundObjectResult(

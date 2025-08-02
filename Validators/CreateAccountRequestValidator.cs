@@ -9,7 +9,7 @@ namespace AccountService.Validators
         public CreateAccountRequestValidator()
         {
             RuleFor(x => x.OwnerId).NotEmpty().WithMessage("OwnerId обязателен");
-            RuleFor(x => x.Type).IsInEnum();
+            RuleFor(x => x.Type).IsInEnum().WithMessage("Тип счета должен быть одним из: Checking, Deposit, Credit");
             RuleFor(x => x.Currency).Length(3).Must(BeValidCurrency)
                 .WithMessage("Валюта должна быть RUB, USD или EUR");
             RuleFor(x => x.InterestRate).GreaterThanOrEqualTo(0)

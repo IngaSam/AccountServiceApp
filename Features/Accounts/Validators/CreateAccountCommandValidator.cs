@@ -18,7 +18,7 @@ namespace AccountService.Features.Accounts.Validators
 
             RuleFor(x => x.Type)
                 .IsInEnum()
-                .WithMessage("Указан недопустимый тип счета");
+                .WithMessage("Допустимые типы счетов: Checking, Deposit, Credit");
 
             RuleFor(x => x.Currency)
                 .NotEmpty()
@@ -30,12 +30,18 @@ namespace AccountService.Features.Accounts.Validators
                 ;
 
             RuleFor(x => x.InterestRate)
+                .NotNull()
+                .When(x => x.Type == AccountType.Deposit || x.Type == AccountType.Credit)
+                .WithMessage("Процентная ставка обязательна для счетов типа Deposit или Credit")
                 .GreaterThanOrEqualTo(0)
-                .WithMessage("Процентная ставка не может быть отрицательной")
                 .When(x => x.Type != AccountType.Checking)
+                .WithMessage("Процентная ставка не может быть отрицательной")
                 .LessThanOrEqualTo(currencyConfig.MaxInterestRate)
+                .When(x => x.Type == AccountType.Deposit)
                 .WithMessage($"Процентная ставка не может превышать {currencyConfig.MaxInterestRate}%")
-                .When(x => x.Type == AccountType.Deposit);
+                .Null()
+                .When(x => x.Type == AccountType.Checking)
+                .WithMessage("Процентная ставка не должна указываться для счетов типа Checking");
         }
     }
 }

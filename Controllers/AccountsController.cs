@@ -188,5 +188,18 @@ namespace AccountService.Controllers
             var result = await mediator.Send(command);
             return result ? NoContent() : NotFound();
             }
+
+            /// <summary>
+            /// Проверяет существование счёта по ID
+            /// </summary>
+            [HttpGet("{id}/exists")]
+            [ProducesResponseType(StatusCodes.Status200OK)]
+            [ProducesResponseType(StatusCodes.Status404NotFound)]
+            public async Task<IActionResult> Exists(Guid id)
+            {
+                var exists = await mediator.Send(new CheckAccountExistsQuery(id));
+                return exists ? Ok() : NotFound();
+            }
     }
+
 }

@@ -24,7 +24,9 @@ namespace AccountService.Features.Accounts.Handlers
                 throw new ValidationException($"Client with id {request.OwnerId} not found");
             if (!currencyService.IsCurrencySupported(request.Currency))
                 throw new ValidationException($"Currency {request.Currency} is not supported currency");
-
+            if (request.Type != AccountType.Checking && request.InterestRate < 0)
+                throw new ValidationException("Процентная ставка не может быть отрицательной");
+            
 
             // Создание счета
             var account = new Account

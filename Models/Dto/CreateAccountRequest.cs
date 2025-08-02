@@ -1,4 +1,5 @@
 ﻿using AccountService.Models.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace AccountService.Models.Dto
 
@@ -27,9 +28,10 @@ namespace AccountService.Models.Dto
         public required string Currency { get; set; }
 
         /// <summary>
-        /// Процентная ставка (только для Deposit/Credit)
+        /// Процентная ставка (только для Deposit/Credit, должна быть от 0 до 100)
         /// </summary>
         /// <example>3.5</example>
-        public decimal? InterestRate { get; set;  }
+        [Range(0, 100, ErrorMessage = "Процентная ставка должна быть от 0 до 100")]
+        public decimal? InterestRate { get; set; }
     }
 }
