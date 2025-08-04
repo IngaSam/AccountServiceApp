@@ -1,9 +1,11 @@
-﻿using AccountService.Features.Accounts.Commands;
+﻿using System.ComponentModel.DataAnnotations;
+using AccountService.Features.Accounts.Commands;
 using AccountService.Interfaces;
 using AccountService.Models;
 using AccountService.Models.Enums;
 using FluentValidation;
 using MediatR;
+using ValidationException = FluentValidation.ValidationException;
 
 namespace AccountService.Features.Accounts.Handlers
 {
