@@ -4,6 +4,10 @@ namespace AccountService.Models
 {
     public class Account
     {
+        public Account()
+        {
+            
+        }
         public Guid Id { get; set; }                  // Уникальный идентификатор
         public Guid OwnerId { get; set; }            // ID владельца (клиента)
         public AccountType Type { get; set; }         // Тип счёта (Checking|Deposit|Credit)

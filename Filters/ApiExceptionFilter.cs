@@ -1,4 +1,6 @@
 ﻿using AccountService.Exceptions;
+using AccountService.Models.Errors;
+using AccountService.Models.Results;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -9,42 +11,51 @@ namespace AccountService.Filters
     {
         public void OnException(ExceptionContext context)
         {
-            context.Result = context.Exception switch
+
+
+            var result = context.Exception switch
             {
                 // Обработка ошибок валидации FluentValidation
-                ValidationException ex => new BadRequestObjectResult(
-                    new
-                    {
-                        Error = "Validation error",
-                        Details = ex.Errors.Select(e => new {
-                            Property = e.PropertyName,
-                            Message = e.ErrorMessage
-                        })
-                    }),
-                
+                ValidationException ex => HandleValidationException(ex),
+
 
                 // Обработка бизнес-ошибок
                 AccountNotFoundException ex => new NotFoundObjectResult(
-                    new { Error = ex.Message }),
+                    MbResult<object>.Fail("ACCOUNT_NOT_FOUND", ex.Message)),
 
                 CurrencyNotSupportedException ex => new BadRequestObjectResult(
-                    new { Error = ex.Message }),
+                    MbResult<object>.Fail("UNSUPPORTED_CURRENCY", ex.Message)),
 
                 InsufficientFundsException ex => new BadRequestObjectResult(
-                    new { Error = ex.Message }),
+                    MbResult<object>.Fail("UNSUPPORTED_CURRENCY", ex.Message)),
 
                 // Обработка всех остальных исключений
-                _ => new ObjectResult(new
-                {
-                    Error = "Internal server error",
-                    Details = context.Exception.Message
-                })
+                _ => new ObjectResult(
+                    MbResult<object>.Fail("INTERNAL_ERROR", "Произошла внутренняя ошибка сервера"))
                 {
                     StatusCode = StatusCodes.Status500InternalServerError
                 }
             };
+            context.Result = result;
             context.ExceptionHandled = true;
         }
+
+        private static IActionResult HandleValidationException(ValidationException ex)
+        {
+            // Берем первую ошибку для каждого поля
+            var errors = ex.Errors
+                .GroupBy(e => e.PropertyName)
+                .Select(g => g.First())
+                .ToList();
+
+            // Если есть кастомный MbError в State - используем его
+            var firstError = errors.First();
+            var mbError = firstError.CustomState as MbError
+                          ?? MbError.Create("VALIDATION_ERROR", firstError.ErrorMessage);
+
+            return new BadRequestObjectResult(MbResult<object>.Fail(mbError));
+        }
+
     }
-    
+
 }
