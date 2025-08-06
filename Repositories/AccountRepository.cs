@@ -7,7 +7,7 @@ namespace AccountService.Repositories
     public class AccountRepository : IAccountRepository
     {
         private readonly List<Account> _accounts = [];
-        private readonly Lock _lock = new();
+        private readonly object _lock = new();
 
         public IEnumerable<Account> GetAll()
         {

@@ -5,36 +5,43 @@ namespace AccountService.Models.Results
     public static class MbResultExtensions
     {
         /// <summary>
-        /// Создает неуспешный результат с ошибкой
+        /// Преобразует результат в новый тип, сохраняя ошибку (если есть)
         /// </summary>
-        public static MbResult<T> Fail<T>(this MbResult<T> _, MbError error)
+        public static MbResult<TNew> Map<TOrig, TNew>(
+            this MbResult<TOrig> result,
+            Func<TOrig, TNew> mapper)
         {
-            return new MbResult<T>
-            {
-                Error = error
-            };
+            return result.IsSuccess
+                ? MbResult<TNew>.Success(mapper(result.Data!))
+                : MbResult<TNew>.Fail(result.Error!);
         }
 
         /// <summary>
-        /// Создает неуспешный результат с кодом и сообщением
+        /// Выполняет действие при успешном результате
         /// </summary>
-        public static MbResult<T> Fail<T>(this MbResult<T> _, string code, string message)
+        public static MbResult<T> OnSuccess<T>(
+            this MbResult<T> result,
+            Action<T> action)
         {
-            return new MbResult<T>
+            if (result.IsSuccess)
             {
-                Error = new MbError(code, message)
-            };
+                action(result.Data!);
+            }
+            return result;
         }
 
         /// <summary>
-        /// Создает успешный результат с данными
+        /// Обрабатывает ошибку (если есть)
         /// </summary>
-        public static MbResult<T> Success<T>(this MbResult<T> _, T data)
+        public static MbResult<T> OnError<T>(
+            this MbResult<T> result,
+            Action<MbError> action)
         {
-            return new MbResult<T>
+            if (!result.IsSuccess)
             {
-                Data = data
-            };
+                action(result.Error!);
+            }
+            return result;
         }
     }
 }
