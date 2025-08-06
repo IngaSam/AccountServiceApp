@@ -381,6 +381,18 @@ namespace AccountService.Controllers
                     MbResult<object>.Fail("INTERNAL_ERROR", "Внутренняя ошибка сервера"));
             }
         }
+
+        [HttpGet("test-auth")]
+        [Authorize]
+        public IActionResult TestAuth()
+        {
+            return Ok(new
+            {
+                Message = "Authenticated successfully!",
+                User = User.Identity?.Name,
+                Claims = User.Claims.Select(c => new { c.Type, c.Value })
+            });
+        }
     }
 
 }
