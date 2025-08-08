@@ -1,28 +1,34 @@
 ﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Npgsql;
+using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
 
+
+namespace AccountService.HealthChecks;
+
 public class DatabaseHealthCheck : IHealthCheck
 {
-    public Task<HealthCheckResult> CheckHealthAsync(
+    private readonly string _connectionString;
+
+    public DatabaseHealthCheck(string connectionString)
+    {
+        _connectionString = connectionString;
+    }
+
+    public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
-        // Здесь реализуйте проверку подключения к БД
-        // Это пример - замените на реальную проверку
-
         try
         {
-            // Проверка подключения к БД
-            // Например, выполнить простой запрос "SELECT 1"
-
-            return Task.FromResult(
-                HealthCheckResult.Healthy("Database connection is OK"));
+            await using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
+            return HealthCheckResult.Healthy();
         }
-        catch (Exception ex)
+        catch (DbException ex)
         {
-            return Task.FromResult(
-                HealthCheckResult.Unhealthy("Database connection failed", ex));
+            return HealthCheckResult.Unhealthy("Database connection failed", ex);
         }
     }
 }

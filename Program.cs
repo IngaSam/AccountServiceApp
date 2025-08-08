@@ -16,17 +16,18 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AccountService.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,9 +38,12 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins(
+                "http://localhost:8080",
+                "http://localhost:8181")
+            .AllowAnyHeader()
             .AllowAnyMethod()
-            .AllowAnyHeader();
+            .AllowCredentials();
     });
 });
 
@@ -55,6 +59,11 @@ builder.Services.AddControllers(options =>
         options.JsonSerializerOptions.PropertyNamingPolicy = null;
     });
 
+builder.Services.AddHttpClient("keycloak", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["Keycloak:Authority"]);
+});
+
 // Настройка Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -68,16 +77,26 @@ builder.Services.AddSwaggerGen(c =>
 
     // XML документация
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFile));
 
-    // JWT в Swagger
+    // JWT в Swagger /"Bearer" "oauth2"
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer"
+        Type = SecuritySchemeType.OAuth2,
+        Flows = new OpenApiOAuthFlows
+        {
+            AuthorizationCode = new OpenApiOAuthFlow
+            {
+                AuthorizationUrl = new Uri($"{builder.Configuration["Keycloak:Authority"]}/protocol/openid-connect/auth"),
+                TokenUrl = new Uri($"{builder.Configuration["Keycloak:Authority"]}/protocol/openid-connect/token"),
+                Scopes = new Dictionary<string, string>
+                {
+                    {"openid", "OpenID"},
+                    {"profile", "Profile"}
+                }
+            }
+        }
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -124,29 +143,74 @@ if (string.IsNullOrEmpty(keycloakSettings?.Authority))
 if (string.IsNullOrEmpty(keycloakSettings.Audience))
     throw new ApplicationException("Keycloak Audience not configured");
 
-// Настройка аутентификации (использует проверенную конфигурацию)
+// Настройка аутентификации 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.Authority = keycloakSettings.Authority; // Используем уже проверенное значение
         options.Audience = keycloakSettings.Audience;
+       // options.Authority = "http://keycloak:8080/realms/master";
+       // options.Audience = "account-service-client";
         options.RequireHttpsMetadata = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = keycloakSettings.Authority,
+            ValidAudience = keycloakSettings.Audience
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                context.Response.StatusCode = 401;
+                return Task.CompletedTask;
+            }
+        };
     });
 // Валидация CurrencySettings
 var currencySettings = builder.Configuration.GetSection("CurrencySettings").Get<CurrencySettings>();
 if (currencySettings?.SupportedCurrencies == null || !currencySettings.SupportedCurrencies.Any())
-    throw new ApplicationException("SupportedCurrencies not configured");
+  throw new ApplicationException("SupportedCurrencies not configured");
+
+/*var currencySettings = builder.Configuration.GetSection("CurrencySettings").Get<CurrencySettings>()
+                       ?? throw new ApplicationException("CurrencySettings section not found");
+
+currencySettings.SupportedCurrencies ??= new List<string> { "RUB", "USD", "EUR" };
+currencySettings.DefaultCurrency ??= "RUB";
+
+if (!currencySettings.SupportedCurrencies.Any())
+    throw new ApplicationException("SupportedCurrencies list cannot be empty");
+
+if (!currencySettings.SupportedCurrencies.Contains(currencySettings.DefaultCurrency))
+    throw new ApplicationException($"DefaultCurrency '{currencySettings.DefaultCurrency}' is not in SupportedCurrencies");*/
+
+
 
 // FluentValidation
-builder.Services.AddValidatorsFromAssemblyContaining<Program>(lifetime: ServiceLifetime.Scoped);
+builder.Services.AddValidatorsFromAssemblyContaining<Program>(ServiceLifetime.Scoped);
 builder.Services.AddFluentValidationAutoValidation(config =>
 {
     config.DisableDataAnnotationsValidation = true;
 });
 
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException("Connection string 'DefaultConnection' not found");
+}
+
 // Health checks
 builder.Services.AddHealthChecks()
-    .AddCheck<DatabaseHealthCheck>("database");
+    .AddCheck<DatabaseHealthCheck>("database", failureStatus: HealthStatus.Unhealthy)
+    .AddNpgSql(connectionString, name: "postgresql")
+    .AddUrlGroup(
+    new Uri($"{builder.Configuration["Keycloak:Authority"]}/.well-known/openid-configuration"),
+    name: "keycloak",
+    timeout: TimeSpan.FromSeconds(5));
 
 var app = builder.Build();
 
@@ -158,7 +222,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Account Service v1");
-        c.RoutePrefix = "swagger";
+        c.OAuthClientId("account-service-client");
+        c.OAuthAppName("Account Service API");
+        c.OAuth2RedirectUrl("http://localhost:8181/swagger/oauth2-redirect.html");
+        c.OAuthUsePkce();
     });
 }
 else
@@ -192,7 +259,15 @@ app.Use(async (context, next) =>
         ));
     }
 });
-
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
+        var exception = exceptionHandlerPathFeature?.Error;
+        await context.Response.WriteAsync($"Ошибка: {exception?.Message}");
+    });
+});
 app.Run();
 
 // Фильтр для enum
