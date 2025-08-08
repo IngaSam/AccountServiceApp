@@ -1,11 +1,11 @@
 services:
   db:
-    image: postgres:16
+    image: postgres:16-alpine
     env_file: .env
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=account_service      
+      - POSTGRES_DB=account_service   
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init-keycloak.sql:/docker-entrypoint-initdb.d/init-keycloak.sql
@@ -15,40 +15,47 @@ services:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
-      retries: 5
-      start_period: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
 
   keycloak:
-    image: quay.io/keycloak/keycloak:25.0.6
+    image: quay.io/keycloak/keycloak:24.0
     env_file: .env
     environment:
-      - KC_DB=postgres
-      - KC_DB_URL=jdbc:postgresql://db:5432/keycloak
-      - KC_DB_USERNAME=keycloak
-      - KC_DB_PASSWORD=password 
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
-      - KC_PROXY=none 
-      - KC_HOSTNAME=localhost
-      - KC_HTTP_ENABLED=true
-      - KC_HOSTNAME_STRICT=false
-      - KC_HOSTNAME_STRICT_HTTPS=false
-      - KC_HTTP_RELATIVE_PATH=/auth 
-      - KC_LOG_LEVEL=INFO
-      - JAVA_OPTS=-Xms512m -Xmx1024m 
+    - KEYCLOAK_ADMIN=admin
+    - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+    - KC_DB=postgres
+    - KC_DB_URL=jdbc:postgresql://db:5432/keycloak
+    - KC_DB_USERNAME=keycloak
+    - KC_DB_PASSWORD=${DB_PASSWORD}
+    - KC_HOSTNAME=localhost:8181
+    - KC_HTTP_ENABLED=true
+    - KC_PROXY=edge
+    - KC_DB_SCHEMA=public
+    - KC_HTTP_PORT=8080
+    - KC_HTTP_RELATIVE_PATH=/auth
+    - JAVA_OPTS=-Xms512m -Xmx1024m
     command:
-      - start-dev     
+      - start-dev      
+      - --http-relative-path=/auth
+     # - --features=admin-fine-grained-authz
+     # - --spi-theme-static-max-age=-1
+      #- --spi-theme-cache-themes=false
+      #- --spi-theme-cache-templates=false
+     # - --admin-only
     ports:
       - "8181:8080"
     depends_on:
       db:
         condition: service_healthy
     healthcheck:
-      test:  ["CMD-SHELL", "curl -f http://localhost:8080/auth/health/ready || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 20
+      test:  ["CMD-SHELL", "curl -f http://localhost:8080/auth/realms/master || exit 0"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
       start_period: 120s
+    restart: unless-stopped
 
   account-service:
     build:
@@ -56,12 +63,13 @@ services:
       dockerfile: Dockerfile
     env_file: .env
     environment:
-      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
       - ConnectionStrings__DefaultConnection=Host=db;Database=account_service;Username=postgres;Password=${DB_PASSWORD}
-      - Authentication__Jwt__Authority=http://keycloak:8080/realms/account-service
+      - Authentication__Jwt__Authority=http://keycloak:8080/realms/master
       - Authentication__Jwt__Audience=account-service-client
-      - Authentication__Jwt__Issuer=http://keycloak:8080/realms/account-service
-      - Authentication__Jwt__Secret=YourVeryStrongSecretKeyAtLeast32CharsLong
+      - Authentication__Jwt__Issuer=http://keycloak:8080/realms/master
+      - Authentication__Jwt__Secret=${JWT_SECRET_KEY}
       - JAVA_OPTS=-Xms512m -Xmx1024m   
     ports:
       - "8080:80"
@@ -79,7 +87,7 @@ services:
     deploy:
       resources:
        limits:
-        memory: 1.5G
+        memory: 3G
 
 volumes:
    postgres_data:

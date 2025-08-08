@@ -25,7 +25,7 @@ public class ApiExceptionMiddleware
         {
             _logger.LogError(ex, "An unhandled exception has occurred");
 
-            context.Response.StatusCode = 500;
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
             context.Response.ContentType = "application/json";
 
             var result = JsonSerializer.Serialize(MbResult<object>.Fail(

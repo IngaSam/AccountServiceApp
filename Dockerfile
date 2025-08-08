@@ -32,17 +32,23 @@ ARG UID=1000
 RUN groupadd -g ${UID} appgroup && \
     useradd -u ${UID} -g appgroup -d /app -s /bin/sh --no-create-home appuser && \
     chown -R appuser:appgroup /app
-USER appuser
 
 # Копируем опубликованные файлы с сохранением прав
 COPY --from=publish --chown=appuser:appgroup /app/publish .
 
 # Оптимизация для контейнера
 ENV DOTNET_RUNNING_IN_CONTAINER=true \
+    ASPNETCORE_ENVIRONMENT=Development \
     ASPNETCORE_URLS=http://+:80 \
     DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 \
     DOTNET_NOLOGO=true \
     DOTNET_EnableDiagnostics=0
+
+ENV ConnectionStrings__DefaultConnection="Host=db;Database=account_service;Username=postgres;Password=${DB_PASSWORD}" \
+    Keycloak__Authority="http://keycloak:8080/realms/master" \
+    Keycloak__Audience="account-service-client"
+
+USER appuser
 
 # Настройка healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
